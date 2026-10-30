@@ -1,0 +1,28 @@
+{
+  "name": "Estante RGF",
+  "short_name": "Estante RGF",
+  "description": "Leitor de livros em PDF com página dupla, sumário, busca, marcadores e estante local.",
+  "lang": "pt-BR",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1E5A66",
+  "theme_color": "#1E5A66",
+  "categories": ["books", "education", "productivity"],
+  "icons": [
+    {"src": "icones/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icones/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "share_target": {
+    "action": "./compartilhar",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {"files": [{"name": "pdf", "accept": ["application/pdf", ".pdf"]}]}
+  },
+  "file_handlers": [
+    {"action": "./", "accept": {"application/pdf": [".pdf"]}}
+  ]
+}

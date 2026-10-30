@@ -1,0 +1,41 @@
+ESTANTE RGF - INSTALAÇÃO NO CELULAR
+RGF Informações Fiscais
+
+O QUE É
+Aplicativo web instalável (PWA). Depois de instalado, ganha ícone na tela
+inicial, abre em tela cheia, funciona sem internet e guarda os livros no
+próprio aparelho. Nenhum PDF é enviado para servidores.
+
+ETAPA 1 - HOSPEDAR (uma única vez, gratuito)
+O app precisa estar em um endereço HTTPS. Opção recomendada: GitHub Pages.
+  1. Crie uma conta em github.com (se ainda não tiver).
+  2. Crie um repositório público chamado: estante-rgf
+  3. Clique em "uploading an existing file" e envie TODO o conteúdo desta
+     pasta (index.html, sw.js, manifest.webmanifest e as pastas lib e icones).
+  4. Em Settings > Pages, escolha "Deploy from a branch", branch "main",
+     pasta "/ (root)" e salve.
+  5. Em 1 a 2 minutos o app estará em:
+     https://rgf-tecno.github.io/estante-rgf/
+
+ETAPA 2 - INSTALAR NO ANDROID (Chrome)
+  1. Abra o endereço no Chrome.
+  2. Toque em "Instalar app" (aviso na parte de baixo) ou no menu de três
+     pontos > "Instalar app" / "Adicionar à tela inicial".
+  3. O ícone Estante RGF aparece na tela inicial.
+  Extra no Android: em qualquer app (WhatsApp, Arquivos, Drive), toque em
+  Compartilhar em um PDF e escolha "Estante RGF" para abrir direto no leitor.
+
+ETAPA 2 - INSTALAR NO IPHONE (Safari)
+  1. Abra o endereço no Safari (precisa ser o Safari).
+  2. Toque no botão Compartilhar (quadrado com seta para cima).
+  3. Toque em "Adicionar à Tela de Início" e confirme.
+
+ATUALIZAÇÕES
+Para atualizar o app, substitua os arquivos no repositório. Os celulares
+recebem a nova versão ao abrir o app conectados à internet.
+
+LIMITES
+- Livros e marcadores ficam em cada aparelho; não sincronizam entre eles.
+- No iPhone, apagar o app da tela inicial apaga também a estante.
+- PDFs escaneados abrem, mas sem busca no texto (OCR em etapa futura).
+- PDFs protegidos por senha não abrem.

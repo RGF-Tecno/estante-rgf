@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1E5A66">
+<meta name="description" content="Leitor de livros em PDF da RGF Informações Fiscais">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Estante RGF">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icones/favicon.png">
+<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Estante RGF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Didact+Gothic&family=Literata:opsz,wght@7..72,500;7..72,600&display=swap">
+<style>
+/* Layout: sala de leitura; barra superior fina, mesa central com o livro aberto, gaveta lateral (sumário, marcadores, estante), régua de progresso no rodapé */
+:root{
+  --mesa:#E4E7EA; --mesa-2:#D6DADF; --painel:#F7F8F9; --tinta:#1B2229; --tinta-2:#56616C;
+  --linha:#C5CBD2; --acento:#1E5A66; --acento-suave:#D3E4E7; --lombada:rgba(20,28,36,.28);
+  --sombra:0 18px 40px -18px rgba(18,26,34,.45);
+  --f-ui:"Century Gothic","Didact Gothic","Avant Garde",Futura,system-ui,sans-serif;
+  --f-titulo:"Literata",Georgia,"Times New Roman",serif;
+  --f-num:"Century Gothic","Didact Gothic",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --mesa:#14181C; --mesa-2:#1C2127; --painel:#1E242A; --tinta:#E6EAEE; --tinta-2:#9AA5B0;
+  --linha:#323A43; --acento:#6FB3BF; --acento-suave:#22393E; --lombada:rgba(0,0,0,.55);
+  --sombra:0 18px 40px -16px rgba(0,0,0,.8); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --mesa:#14181C; --mesa-2:#1C2127; --painel:#1E242A; --tinta:#E6EAEE; --tinta-2:#9AA5B0;
+  --linha:#323A43; --acento:#6FB3BF; --acento-suave:#22393E; --lombada:rgba(0,0,0,.55);
+  --sombra:0 18px 40px -16px rgba(0,0,0,.8); color-scheme:dark}
+html,body{height:100%}
+html{box-sizing:border-box}
+body{background:var(--mesa);color:var(--tinta);font-family:var(--f-ui);font-size:15px;overflow:hidden}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;align-items:center;gap:12px;padding-block:10px;border-bottom:1px solid var(--linha);flex-wrap:wrap}
+.marca{display:flex;flex-direction:column;min-width:0;flex:1 1 180px}
+.marca small{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--tinta-2)}
+.marca h1{margin:0;font-family:var(--f-titulo);font-weight:600;font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ferr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.btn{border:1px solid var(--linha);background:var(--painel);border-radius:6px;padding:7px 11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1.1}
+.btn:hover{border-color:var(--acento)}
+.btn:focus-visible,.aba:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
+.btn.prim{background:var(--acento);border-color:var(--acento);color:var(--painel)}
+.btn[aria-pressed="true"]{background:var(--acento-suave);border-color:var(--acento)}
+.btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
+select.btn{padding-right:8px}
+#bPapel{display:none}
+main{position:relative;min-height:0;display:grid;grid-template-columns:1fr auto}
+.palco{position:relative;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;padding-block:18px;perspective:2200px}
+.livro{display:flex;position:relative;box-shadow:var(--sombra);transform-style:preserve-3d}
+.folha{position:relative;transform-origin:left center;backface-visibility:hidden}
+.folha.esq{transform-origin:right center}
+.folha canvas{display:block;background:#fff}
+.realce{position:absolute;background:rgba(240,190,40,.42);border-radius:2px;pointer-events:none;mix-blend-mode:multiply}
+.form-busca{display:flex;gap:6px;margin-bottom:8px}
+.form-busca input{flex:1;min-width:0;border:1px solid var(--linha);background:var(--mesa);border-radius:6px;padding:8px 10px}
+.status-busca{font-size:12px;color:var(--tinta-2);padding:2px 4px 8px;line-height:1.5}
+.res{display:block;text-align:left;width:100%;border:0;background:none;padding:8px;border-radius:5px;cursor:pointer;line-height:1.45;font-size:13.5px}
+.res:hover{background:var(--acento-suave)}
+.res .pg{display:block;font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--acento);margin-bottom:2px}
+.res mark{background:rgba(240,190,40,.45);color:inherit;padding:0 1px;border-radius:2px}
+.livro.dupla::after{content:"";position:absolute;top:0;bottom:0;left:50%;width:34px;transform:translateX(-50%);pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--lombada) 48%,var(--lombada) 52%,transparent)}
+.livro.f-sepia canvas{filter:sepia(.38) brightness(.97)}
+.livro.f-noite canvas{filter:invert(.9) hue-rotate(180deg) brightness(.95)}
+.zona{position:absolute;top:0;bottom:0;width:22%;cursor:pointer;z-index:2;background:transparent;border:0}
+.zona.ant{left:0}.zona.prox{right:0}
+.vira-sai-dir{animation:saiDir .22s ease-in forwards}
+.vira-entra-esq{animation:entraEsq .22s ease-out}
+.vira-sai-esq{animation:saiEsq .22s ease-in forwards}
+.vira-entra-dir{animation:entraDir .22s ease-out}
+@keyframes saiDir{to{transform:rotateY(-90deg)}}
+@keyframes entraEsq{from{transform:rotateY(90deg)}to{transform:rotateY(0)}}
+@keyframes saiEsq{to{transform:rotateY(90deg)}}
+@keyframes entraDir{from{transform:rotateY(-90deg)}to{transform:rotateY(0)}}
+@media (prefers-reduced-motion:reduce){.vira-sai-dir,.vira-entra-esq,.vira-sai-esq,.vira-entra-dir{animation:none}}
+.aviso{position:absolute;inset:auto 0 18px 0;margin:auto;width:max-content;max-width:90%;background:var(--tinta);color:var(--mesa);padding:8px 14px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:5}
+.aviso.on{opacity:1}
+.soltar{position:absolute;inset:12px;border:2px dashed var(--acento);border-radius:10px;background:color-mix(in srgb,var(--acento-suave) 80%,transparent);display:flex;align-items:center;justify-content:center;font-family:var(--f-titulo);font-size:22px;z-index:6}
+.carregando{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--tinta-2);font-size:14px}
+aside{width:320px;max-width:86vw;border-left:1px solid var(--linha);background:var(--painel);display:flex;flex-direction:column;min-height:0}
+aside[hidden]{display:none}
+.abas{display:flex;border-bottom:1px solid var(--linha)}
+.aba{flex:1;border:0;background:none;padding:11px 6px;cursor:pointer;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-2);border-bottom:2px solid transparent}
+.aba[aria-selected="true"]{color:var(--tinta);border-bottom-color:var(--acento)}
+.lista{overflow:auto;padding:10px 12px 18px;display:flex;flex-direction:column;gap:2px;min-height:0;flex:1}
+.item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:baseline;padding:7px 8px;border-radius:5px;cursor:pointer;border:0;background:none;text-align:left;width:100%}
+.item:hover{background:var(--acento-suave)}
+.item .pg{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:12px;color:var(--tinta-2)}
+.item.n2{padding-left:22px}.item.n3{padding-left:36px;font-size:14px}
+.item .tit{min-width:0;overflow-wrap:anywhere}
+.vazio{color:var(--tinta-2);font-size:14px;line-height:1.55;padding:10px 4px}
+.marc{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:6px 4px;border-bottom:1px solid var(--linha)}
+.marc input{border:1px solid transparent;background:none;padding:4px 6px;border-radius:4px;min-width:0;width:100%}
+.marc input:hover,.marc input:focus{border-color:var(--linha)}
+.marc .ir{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:13px;border:1px solid var(--linha);background:var(--mesa);border-radius:4px;padding:4px 7px;cursor:pointer}
+.x{border:0;background:none;cursor:pointer;color:var(--tinta-2);font-size:18px;line-height:1;padding:2px 6px}
+.lv{display:grid;grid-template-columns:1fr auto;gap:4px 8px;padding:9px 8px;border-radius:6px;border:1px solid var(--linha);margin-bottom:8px;cursor:pointer;background:var(--mesa)}
+.lv:hover{border-color:var(--acento)}
+.lv b{font-family:var(--f-titulo);font-weight:600;font-size:15px;overflow-wrap:anywhere;min-width:0}
+.lv span{font-size:12px;color:var(--tinta-2);grid-column:1}
+.lv .barra{grid-column:1/-1;height:3px;background:var(--linha);border-radius:2px;overflow:hidden}
+.lv .barra i{display:block;height:100%;background:var(--acento)}
+footer{display:flex;align-items:center;gap:12px;padding-block:10px;border-top:1px solid var(--linha);flex-wrap:wrap}
+footer input[type=range]{flex:1 1 200px;accent-color:var(--acento);min-width:0}
+.pos{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:13px;color:var(--tinta-2);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.pos input{width:62px;text-align:right;border:1px solid var(--linha);background:var(--painel);border-radius:4px;padding:4px 6px}
+.lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-2)}
+@media (max-width:760px){
+  aside{position:absolute;right:0;top:0;bottom:0;z-index:8;box-shadow:var(--sombra)}
+  .rot{display:none}
+  .marca h1{font-size:17px}
+}
+@media (max-width:520px){
+  #bModo,#bMenos,#bMais,#bTela{display:none}
+  header{flex-wrap:nowrap;gap:8px}
+  .marca{flex:1 1 0}
+  .marca h1{font-size:16px}
+  .marca small{display:none}
+  .ferr{flex-wrap:nowrap;gap:5px;flex:none}
+  .btn{padding:7px 8px}
+  #sFiltro{display:none}
+  #bPapel{display:inline-flex}
+  footer{flex-wrap:nowrap;gap:8px}
+  footer input[type=range]{flex:1 1 60px}
+  .pos .lbl,#pct{display:none}
+  .pos input{width:50px}
+  aside{width:100%;max-width:100%}
+}
+@media (max-width:360px){.btn{padding:6px 6px}.ferr{gap:3px}.marca h1{font-size:14px}footer{gap:5px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="marca"><small>Leitor de livros em PDF</small><h1 id="titulo">Abrindo livro de exemplo…</h1></div>
+    <div class="ferr">
+      <button class="btn prim" id="bAbrir" type="button"><svg viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v11z"/></svg><span class="rot">Abrir PDF</span></button>
+      <input type="file" id="arquivo" accept="application/pdf,.pdf" hidden>
+      <button class="btn" id="bModo" type="button" aria-pressed="true" title="Alternar página dupla ou simples"><svg viewBox="0 0 24 24"><path d="M3 5h8v14H3zM13 5h8v14h-8z"/></svg><span class="rot" id="rotModo">Dupla</span></button>
+      <select class="btn" id="sFiltro" title="Tom do papel" aria-label="Tom do papel">
+        <option value="">Branco</option><option value="f-sepia">Sépia</option><option value="f-noite">Noturno</option>
+      </select>
+      <button class="btn" id="bPapel" type="button" title="Tom do papel" aria-label="Alternar tom do papel"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
+      <button class="btn" id="bMenos" type="button" title="Reduzir" aria-label="Reduzir zoom">−</button>
+      <button class="btn" id="bMais" type="button" title="Ampliar" aria-label="Ampliar zoom">+</button>
+      <button class="btn" id="bBuscar" type="button" title="Buscar no livro (Ctrl+F)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><span class="rot">Buscar</span></button>
+      <button class="btn" id="bMarcar" type="button" title="Marcar esta página"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg><span class="rot">Marcar</span></button>
+      <button class="btn" id="bGaveta" type="button" aria-pressed="true" title="Sumário, marcadores e estante"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="rot">Índice</span></button>
+      <button class="btn" id="bTela" type="button" title="Tela cheia" aria-label="Tela cheia"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="palco" id="palco" aria-label="Livro aberto">
+      <div class="livro" id="livro"></div>
+      <div class="carregando" id="carregando">Preparando o livro…</div>
+      <div class="soltar" id="soltar" hidden>Solte o PDF para abrir</div>
+      <div class="aviso" id="aviso" role="status"></div>
+    </section>
+    <aside id="gaveta">
+      <div class="abas" role="tablist">
+        <button class="aba" role="tab" aria-selected="true" data-aba="sumario" id="t-sumario">Sumário</button>
+        <button class="aba" role="tab" aria-selected="false" data-aba="busca" id="t-busca">Busca</button>
+        <button class="aba" role="tab" aria-selected="false" data-aba="marcas" id="t-marcas">Marcadores</button>
+        <button class="aba" role="tab" aria-selected="false" data-aba="estante" id="t-estante">Estante</button>
+      </div>
+      <div class="lista" id="painel"></div>
+    </aside>
+  </main>
+
+  <footer>
+    <button class="btn" id="bAnt" type="button" aria-label="Página anterior">‹ <span class="rot">Anterior</span></button>
+    <input type="range" id="regua" min="1" max="1" value="1" aria-label="Posição no livro">
+    <div class="pos"><span class="lbl">pág.</span><input id="irPara" type="number" min="1" value="1" aria-label="Ir para a página"><span id="total">de 1</span><span id="pct">0%</span></div>
+    <button class="btn" id="bProx" type="button" aria-label="Próxima página"><span class="rot">Próxima</span> ›</button>
+  </footer>
+</div>
+
+<script src="lib/pdf.min.js"></script>
+<script src="lib/jspdf.umd.min.js"></script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const pdfjs=window.pdfjsLib;
+pdfjs.GlobalWorkerOptions.workerSrc="lib/pdf.worker.min.js";
+
+const E={doc:null,id:null,nome:"",pagina:1,total:1,dupla:true,zoom:1,outline:[],aba:"sumario",ocupado:false,amostra:false};
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+          set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const prefs=ls.get("estante:prefs",{dupla:null,filtro:"",zoom:1});
+
+/* ---------- IndexedDB: estante local ---------- */
+let dbP=null;
+function db(){ if(dbP) return dbP;
+  dbP=new Promise((ok,err)=>{try{const r=indexedDB.open("estante-rgf",1);
+    r.onupgradeneeded=()=>r.result.createObjectStore("livros",{keyPath:"id"});
+    r.onsuccess=()=>ok(r.result); r.onerror=()=>err(r.error);}catch(e){err(e)}});
+  return dbP;}
+async function dbOp(modo,fn){const d=await db();return new Promise((ok,err)=>{const tx=d.transaction("livros",modo);const st=tx.objectStore("livros");const r=fn(st);tx.oncomplete=()=>ok(r&&r.result);tx.onerror=()=>err(tx.error);});}
+const salvarLivro=l=>dbOp("readwrite",s=>s.put(l)).catch(()=>{});
+const lerLivro=id=>dbOp("readonly",s=>s.get(id)).catch(()=>null);
+const todosLivros=()=>dbOp("readonly",s=>s.getAll()).catch(()=>[]);
+const apagarLivro=id=>dbOp("readwrite",s=>s.delete(id)).catch(()=>{});
+async function meta(id,patch){const l=await lerLivro(id);if(l){Object.assign(l,patch);await salvarLivro(l);}}
+
+/* ---------- utilidades ---------- */
+let tAviso;
+function aviso(t){const a=$("aviso");a.textContent=t;a.classList.add("on");clearTimeout(tAviso);tAviso=setTimeout(()=>a.classList.remove("on"),2200);}
+const semMov=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const esperar=ms=>new Promise(r=>setTimeout(r,ms));
+function largo(){return $("palco").clientWidth>=720;}
+function usaDupla(){return E.dupla&&largo()&&E.total>1;}
+/* convenção de livro: capa sozinha à direita, depois pares (2-3), (4-5)... */
+function paginasDaVista(p){ if(!usaDupla()) return [p];
+  if(p===1) return [1]; const e=p%2===0?p:p-1; return e+1<=E.total?[e,e+1]:[e];}
+
+/* ---------- renderização ---------- */
+let geracao=0;
+async function desenhar(anim){
+  if(!E.doc) return; const g=++geracao;
+  const vis=paginasDaVista(E.pagina); const livro=$("livro");
+  const pags=await Promise.all(vis.map(n=>E.doc.getPage(n)));
+  if(g!==geracao) return;
+  const palco=$("palco"); const cw=palco.clientWidth-8, ch=palco.clientHeight-36;
+  const vps=pags.map(p=>p.getViewport({scale:1}));
+  const larg=vps.reduce((a,v)=>a+v.width,0), alt=Math.max(...vps.map(v=>v.height));
+  let esc=Math.min(cw/larg,ch/alt)*E.zoom; if(!isFinite(esc)||esc<=0) esc=1;
+  const dpr=Math.min(window.devicePixelRatio||1,2.5);
+  const canv=[];
+  for(let i=0;i<pags.length;i++){
+    const vp=pags[i].getViewport({scale:esc*dpr}); const vpc=pags[i].getViewport({scale:esc});
+    const f=document.createElement("div"); f.className="folha"+(vis.length===2&&i===0?" esq":"");
+    const c=document.createElement("canvas");
+    c.width=Math.floor(vp.width); c.height=Math.floor(vp.height);
+    c.style.width=Math.floor(vpc.width)+"px"; c.style.height=Math.floor(vpc.height)+"px";
+    await pags[i].render({canvasContext:c.getContext("2d"),viewport:vp}).promise;
+    if(g!==geracao) return; f.append(c);
+    if(E.termo) await realcar(f,vis[i],vpc,esc);
+    if(g!==geracao) return; canv.push(f);
+  }
+  /* animação de virada */
+  if(anim&&!semMov&&livro.children.length){
+    const ant=livro.lastElementChild, pri=livro.firstElementChild;
+    const alvo=anim==="prox"?ant:pri;
+    alvo.style.transformOrigin=anim==="prox"?"left center":"right center";
+    alvo.classList.add(anim==="prox"?"vira-sai-dir":"vira-sai-esq");
+    await esperar(210); if(g!==geracao) return;
+  }
+  livro.replaceChildren(...canv);
+  livro.classList.toggle("dupla",vis.length===2);
+  if(anim&&!semMov){ const ent=anim==="prox"?canv[0]:canv[canv.length-1];
+    ent.style.transformOrigin=anim==="prox"?"right center":"left center";
+    ent.classList.add(anim==="prox"?"vira-entra-esq":"vira-entra-dir"); }
+  const za=document.createElement("button"); za.className="zona ant"; za.type="button"; za.tabIndex=-1; za.setAttribute("aria-label","Página anterior"); za.onclick=()=>virar(-1);
+  const zp=document.createElement("button"); zp.className="zona prox"; zp.type="button"; zp.tabIndex=-1; zp.setAttribute("aria-label","Próxima página"); zp.onclick=()=>virar(1);
+  livro.append(za,zp);
+  atualizarRodape(vis);
+}
+function atualizarRodape(vis){
+  vis=vis||paginasDaVista(E.pagina);
+  $("regua").max=E.total; $("regua").value=E.pagina;
+  $("irPara").max=E.total; $("irPara").value=vis[0];
+  $("total").textContent=(vis.length===2?"–"+vis[1]+" ":"")+"de "+E.total;
+  const fim=vis[vis.length-1]; $("pct").textContent=Math.round(fim/E.total*100)+"%";
+  $("bAnt").disabled=vis[0]<=1; $("bProx").disabled=fim>=E.total;
+}
+function irPara(p,anim){
+  p=Math.max(1,Math.min(E.total,p|0||1));
+  const antes=paginasDaVista(E.pagina)[0]; E.pagina=p;
+  const depois=paginasDaVista(p)[0];
+  if(anim===undefined) anim=depois>antes?"prox":depois<antes?"ant":null;
+  if(Math.abs(depois-antes)>2) anim=null;
+  desenhar(anim); guardarPosicao();
+}
+function virar(d){
+  const vis=paginasDaVista(E.pagina);
+  if(d>0){ const f=vis[vis.length-1]; if(f<E.total) irPara(f+1,"prox"); }
+  else { const i=vis[0]; if(i>1) irPara(usaDupla()? (i-2>=1? i-2 : 1) : i-1,"ant"); }
+}
+let tPos;
+function guardarPosicao(){ if(!E.id||E.amostra) return; clearTimeout(tPos);
+  tPos=setTimeout(()=>{ ls.set("estante:pos:"+E.id,E.pagina); meta(E.id,{ultima:E.pagina,lido:Date.now()}); },400); }
+
+/* ---------- busca no texto ---------- */
+const textos=new Map();
+/* normaliza caractere a caractere (sem acento, minúsculo), preservando o alinhamento de posições */
+function norm(s){let o="";for(let i=0;i<s.length;i++){const n=s[i].normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();o+=n[0]||" ";}return o;}
+async function obterTexto(n){
+  if(textos.has(n)) return textos.get(n);
+  let items=[];
+  try{const p=await E.doc.getPage(n); const tc=await p.getTextContent(); items=tc.items.filter(i=>typeof i.str==="string");}catch(e){}
+  const txt=items.map(i=>i.str).join(" ").replace(/\s+/g," ");
+  const r={items,txt,nrm:norm(txt)}; textos.set(n,r); return r;
+}
+async function realcar(folha,n,vpc,esc){
+  const t=await obterTexto(n); const L=E.termo.length;
+  for(const it of t.items){
+    if(!it.str) continue; const ni=norm(it.str); let k=ni.indexOf(E.termo);
+    if(k<0) continue;
+    const tx=pdfjs.Util.transform(vpc.transform,it.transform);
+    const h=Math.hypot(tx[2],tx[3]); const w=it.width*esc; const por=w/it.str.length;
+    while(k>=0){
+      const m=document.createElement("div"); m.className="realce";
+      m.style.left=(tx[4]+por*k)+"px"; m.style.top=(tx[5]-h*0.92)+"px";
+      m.style.width=Math.max(4,por*L)+"px"; m.style.height=(h*1.12)+"px";
+      folha.append(m); k=ni.indexOf(E.termo,k+L);
+    }
+  }
+}
+let buscaId=0;
+Object.assign(E,{termo:"",termoOrig:"",res:[],buscando:false,prog:0,chars:0});
+async function buscar(termo){
+  const id=++buscaId; termo=(termo||"").trim();
+  E.termoOrig=termo; E.termo=termo.length>=2?norm(termo):""; E.res=[]; E.prog=0; E.chars=0; E.buscando=!!E.termo;
+  atualizarResultados(); desenhar(null);
+  if(!E.termo) return;
+  const L=E.termo.length;
+  for(let n=1;n<=E.total;n++){
+    const t=await obterTexto(n); if(id!==buscaId) return;
+    E.chars+=t.txt.length;
+    let i=t.nrm.indexOf(E.termo);
+    while(i>=0&&E.res.length<800){
+      const a=Math.max(0,i-50), b=Math.min(t.txt.length,i+L+50);
+      E.res.push({p:n,antes:(a>0?"…":"")+t.txt.slice(a,i),achado:t.txt.slice(i,i+L),depois:t.txt.slice(i+L,b)+(b<t.txt.length?"…":"")});
+      i=t.nrm.indexOf(E.termo,i+L);
+    }
+    E.prog=n; if(n%10===0) atualizarResultados();
+  }
+  E.buscando=false; atualizarResultados();
+}
+function atualizarResultados(){
+  const box=$("resBusca"), st=$("stBusca"); if(!box||!st) return;
+  const paginas=new Set(E.res.map(r=>r.p)).size;
+  if(!E.termoOrig){ st.textContent="Digite ao menos duas letras. A busca ignora acentos e maiúsculas."; box.replaceChildren(); return; }
+  if(!E.termo){ st.textContent="Digite ao menos duas letras."; box.replaceChildren(); return; }
+  if(E.buscando) st.textContent="Lendo página "+E.prog+" de "+E.total+" · "+E.res.length+" ocorrência(s) até aqui";
+  else if(!E.res.length) st.textContent=E.chars<E.total*20?"Nenhum texto encontrado no arquivo. Este PDF parece escaneado (só imagem); a busca exigirá OCR.":"Nenhuma ocorrência de “"+E.termoOrig+"”.";
+  else st.textContent=E.res.length+(E.res.length>=800?"+":"")+" ocorrência(s) em "+paginas+" página(s)";
+  const frag=document.createDocumentFragment();
+  E.res.slice(0,300).forEach(r=>{
+    const b=document.createElement("button"); b.type="button"; b.className="res";
+    const pg=document.createElement("span"); pg.className="pg"; pg.textContent="Página "+r.p;
+    const mk=document.createElement("mark"); mk.textContent=r.achado;
+    b.append(pg,document.createTextNode(r.antes),mk,document.createTextNode(r.depois));
+    b.onclick=()=>{irPara(r.p); fecharNoCelular();};
+    frag.append(b);
+  });
+  box.replaceChildren(frag);
+}
+function abrirBusca(){
+  E.aba="busca";
+  if($("gaveta").hidden){$("gaveta").hidden=false;$("bGaveta").setAttribute("aria-pressed","true");setTimeout(()=>desenhar(null),30);}
+  renderPainel().then(()=>{const i=$("busca"); if(i){i.focus(); i.select();}});
+}
+
+/* ---------- abertura ---------- */
+async function abrirBytes(bytes,nome,id,amostra){
+  $("carregando").hidden=false; $("carregando").textContent="Preparando o livro…";
+  try{
+    const doc=await pdfjs.getDocument({data:bytes.slice(0)}).promise;
+    if(E.doc) E.doc.destroy();
+    buscaId++; textos.clear();
+    Object.assign(E,{doc,id,nome,total:doc.numPages,amostra:!!amostra,termo:"",termoOrig:"",res:[],buscando:false});
+    let tit=nome.replace(/\.pdf$/i,"");
+    try{const m=await doc.getMetadata(); const t=m&&m.info&&m.info.Title; if(t&&t.trim().length>2) tit=t.trim();}catch(e){}
+    $("titulo").textContent=tit; document.title="Estante RGF · "+tit;
+    E.outline=await montarSumario(doc);
+    E.pagina=amostra?1:ls.get("estante:pos:"+id,1);
+    if(E.pagina>E.total) E.pagina=1;
+    $("carregando").hidden=true;
+    await desenhar(null);
+    if(!amostra){
+      const ex=await lerLivro(id);
+      await salvarLivro({id,nome,titulo:tit,paginas:E.total,tamanho:bytes.byteLength,dados:ex?ex.dados:bytes,
+        ultima:E.pagina,adicionado:ex?ex.adicionado:Date.now(),lido:Date.now()});
+      if(E.pagina>1) aviso("Retomando na página "+E.pagina);
+    }
+    renderPainel();
+  }catch(e){
+    $("carregando").hidden=false;
+    $("carregando").textContent=/password/i.test(e&&e.name||"")?"Este PDF é protegido por senha e não pode ser aberto aqui.":"Não foi possível ler este arquivo. Confira se é um PDF válido.";
+  }
+}
+async function abrirArquivo(f){
+  if(!f) return; if(!/pdf$/i.test(f.type)&&!/\.pdf$/i.test(f.name)){aviso("Escolha um arquivo .pdf");return;}
+  const bytes=await f.arrayBuffer();
+  abrirBytes(bytes,f.name,f.name+"|"+f.size,false);
+}
+async function montarSumario(doc){
+  let o=null; try{o=await doc.getOutline();}catch(e){}
+  if(!o||!o.length) return [];
+  const out=[];
+  async function pag(dest){try{ if(typeof dest==="string") dest=await doc.getDestination(dest);
+    if(!dest) return null; return (await doc.getPageIndex(dest[0]))+1;}catch(e){return null}}
+  async function rec(itens,nivel){ for(const it of itens){ out.push({t:it.title,n:nivel,p:await pag(it.dest)});
+    if(it.items&&it.items.length&&nivel<3) await rec(it.items,nivel+1);} }
+  await rec(o,1); return out;
+}
+
+/* ---------- gaveta ---------- */
+function marcadores(){return E.id?ls.get("estante:marc:"+E.id,[]):[];}
+function gravarMarc(l){ if(E.id) ls.set("estante:marc:"+E.id,l); }
+async function renderPainel(){
+  const p=$("painel"); p.replaceChildren();
+  document.querySelectorAll(".aba").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.aba===E.aba)));
+  if(E.aba==="sumario"){
+    if(!E.outline.length){ p.innerHTML='<p class="vazio">Este PDF não traz sumário embutido. Use a régua inferior ou os marcadores para navegar.</p>'; return; }
+    for(const it of E.outline){ const b=document.createElement("button"); b.type="button"; b.className="item n"+it.n;
+      b.innerHTML='<span class="tit"></span><span class="pg"></span>';
+      b.firstChild.textContent=it.t; b.lastChild.textContent=it.p||"";
+      if(it.p) b.onclick=()=>{irPara(it.p); fecharNoCelular();}; p.append(b); }
+  } else if(E.aba==="busca"){
+    const f=document.createElement("form"); f.className="form-busca"; f.setAttribute("role","search");
+    f.innerHTML='<input id="busca" type="search" placeholder="Palavra ou expressão" aria-label="Buscar no livro" autocomplete="off"><button class="btn prim" type="submit">Buscar</button>';
+    f.querySelector("input").value=E.termoOrig;
+    f.onsubmit=e=>{e.preventDefault(); buscar(f.querySelector("input").value);};
+    const st=document.createElement("div"); st.className="status-busca"; st.id="stBusca"; st.setAttribute("role","status");
+    const rb=document.createElement("div"); rb.id="resBusca";
+    p.append(f,st,rb);
+    if(E.termoOrig){ const lim=document.createElement("button"); lim.type="button"; lim.className="btn"; lim.textContent="Limpar destaque";
+      lim.style.alignSelf="flex-start"; lim.style.marginBottom="6px"; lim.onclick=()=>{buscar(""); renderPainel();}; p.insertBefore(lim,st); }
+    atualizarResultados();
+  } else if(E.aba==="marcas"){
+    const l=marcadores();
+    if(!l.length){ p.innerHTML='<p class="vazio">Nenhum marcador ainda. Toque em <b>Marcar</b> na barra superior para guardar a página atual, com uma anotação opcional.</p>'; return; }
+    l.sort((a,b)=>a.p-b.p).forEach((m,i)=>{
+      const r=document.createElement("div"); r.className="marc";
+      const ir=document.createElement("button"); ir.type="button"; ir.className="ir"; ir.textContent="p. "+m.p; ir.onclick=()=>{irPara(m.p);fecharNoCelular();};
+      const nt=document.createElement("input"); nt.id="nota-"+m.p+"-"+i; nt.value=m.nota||""; nt.placeholder="Anotação"; nt.setAttribute("aria-label","Anotação da página "+m.p);
+      nt.onchange=()=>{const a=marcadores(); const x=a.find(z=>z.p===m.p); if(x){x.nota=nt.value; gravarMarc(a);}};
+      const x=document.createElement("button"); x.type="button"; x.className="x"; x.textContent="×"; x.setAttribute("aria-label","Remover marcador");
+      x.onclick=()=>{gravarMarc(marcadores().filter(z=>z.p!==m.p)); renderPainel();};
+      r.append(ir,nt,x); p.append(r);
+    });
+  } else {
+    const livros=(await todosLivros()).sort((a,b)=>(b.lido||0)-(a.lido||0));
+    if(E.aba!=="estante") return;
+    if(!livros.length){ p.innerHTML='<p class="vazio">A estante guarda, neste navegador, os PDFs que você abrir, com a página em que parou. Nada é enviado para servidores.</p>'; return; }
+    for(const l of livros){
+      const c=document.createElement("div"); c.className="lv"; c.tabIndex=0; c.setAttribute("role","button");
+      const pr=Math.round((l.ultima||1)/(l.paginas||1)*100);
+      c.innerHTML='<b></b><button class="x" type="button" aria-label="Remover da estante">×</button><span></span><div class="barra"><i></i></div>';
+      c.querySelector("b").textContent=l.titulo||l.nome;
+      c.querySelector("span").textContent="pág. "+(l.ultima||1)+" de "+l.paginas+" · "+pr+"% · "+(l.tamanho/1048576).toFixed(1).replace(".",",")+" MB";
+      c.querySelector("i").style.width=pr+"%";
+      const abrir=()=>{abrirBytes(l.dados,l.nome,l.id,false); fecharNoCelular();};
+      c.onclick=e=>{ if(e.target.closest(".x")) return; abrir(); };
+      c.onkeydown=e=>{ if(e.key==="Enter") abrir(); };
+      c.querySelector(".x").onclick=async()=>{ await apagarLivro(l.id); renderPainel(); aviso("Removido da estante"); };
+      p.append(c);
+    }
+  }
+}
+function fecharNoCelular(){ if(window.innerWidth<=760){ $("gaveta").hidden=true; $("bGaveta").setAttribute("aria-pressed","false"); setTimeout(()=>desenhar(null),30);} }
+
+/* ---------- controles ---------- */
+$("bAbrir").onclick=()=>$("arquivo").click();
+$("arquivo").onchange=e=>{abrirArquivo(e.target.files[0]); e.target.value="";};
+$("bAnt").onclick=()=>virar(-1); $("bProx").onclick=()=>virar(1);
+$("regua").oninput=e=>{E.pagina=+e.target.value; atualizarRodape();};
+$("regua").onchange=e=>irPara(+e.target.value,null);
+$("irPara").onchange=e=>irPara(+e.target.value,null);
+function aplicarModo(){ $("bModo").setAttribute("aria-pressed",String(E.dupla)); $("rotModo").textContent=E.dupla?"Dupla":"Simples"; }
+$("bModo").onclick=()=>{E.dupla=!E.dupla; prefs.dupla=E.dupla; ls.set("estante:prefs",prefs); aplicarModo(); desenhar(null);
+  if(E.dupla&&!largo()) aviso("Página dupla aparece em telas mais largas");};
+$("sFiltro").onchange=e=>{ const l=$("livro"); l.classList.remove("f-sepia","f-noite"); if(e.target.value) l.classList.add(e.target.value); prefs.filtro=e.target.value; ls.set("estante:prefs",prefs); };
+function zoom(f){E.zoom=Math.max(.5,Math.min(2.5,+(E.zoom*f).toFixed(2))); prefs.zoom=E.zoom; ls.set("estante:prefs",prefs); desenhar(null); aviso("Zoom "+Math.round(E.zoom*100)+"%");}
+$("bMais").onclick=()=>zoom(1.15); $("bMenos").onclick=()=>zoom(1/1.15);
+$("bPapel").onclick=()=>{ const s=$("sFiltro"); s.selectedIndex=(s.selectedIndex+1)%s.options.length; s.dispatchEvent(new Event("change")); aviso("Papel "+s.options[s.selectedIndex].text.toLowerCase()); };
+$("bBuscar").onclick=()=>{ if(E.doc) abrirBusca(); };
+$("bMarcar").onclick=()=>{ if(!E.doc) return; const p=paginasDaVista(E.pagina)[0]; const l=marcadores();
+  if(l.some(m=>m.p===p)){aviso("A página "+p+" já está marcada");}
+  else{ l.push({p,nota:"",em:Date.now()}); gravarMarc(l); aviso("Página "+p+" marcada"); }
+  E.aba="marcas"; if($("gaveta").hidden){$("gaveta").hidden=false;$("bGaveta").setAttribute("aria-pressed","true");setTimeout(()=>desenhar(null),30);} renderPainel(); };
+$("bGaveta").onclick=()=>{ const g=$("gaveta"); g.hidden=!g.hidden; $("bGaveta").setAttribute("aria-pressed",String(!g.hidden)); setTimeout(()=>desenhar(null),30); };
+document.querySelectorAll(".aba").forEach(b=>b.onclick=()=>{E.aba=b.dataset.aba; renderPainel();});
+$("bTela").onclick=()=>{ try{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(()=>aviso("Tela cheia indisponível aqui")); }catch(e){aviso("Tela cheia indisponível aqui");} };
+document.addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="f"&&E.doc){e.preventDefault();abrirBusca();return;}
+  if(e.target.matches("input,select,textarea")) return;
+  if(e.key==="/"){e.preventDefault();abrirBusca();return;}
+  if(["ArrowRight","PageDown"," "].includes(e.key)){e.preventDefault();virar(1);}
+  else if(["ArrowLeft","PageUp"].includes(e.key)){e.preventDefault();virar(-1);}
+  else if(e.key==="Home") irPara(1); else if(e.key==="End") irPara(E.total);
+  else if(e.key==="+"||e.key==="=") zoom(1.15); else if(e.key==="-") zoom(1/1.15);
+});
+/* gesto de deslizar no celular */
+let x0=null; $("palco").addEventListener("touchstart",e=>{x0=e.touches[0].clientX},{passive:true});
+$("palco").addEventListener("touchend",e=>{ if(x0==null) return; const dx=e.changedTouches[0].clientX-x0; if(Math.abs(dx)>50) virar(dx<0?1:-1); x0=null;},{passive:true});
+/* arrastar e soltar */
+let cont=0; const pal=$("palco");
+addEventListener("dragenter",e=>{e.preventDefault();cont++;$("soltar").hidden=false;});
+addEventListener("dragleave",()=>{if(--cont<=0){cont=0;$("soltar").hidden=true;}});
+addEventListener("dragover",e=>e.preventDefault());
+addEventListener("drop",e=>{e.preventDefault();cont=0;$("soltar").hidden=true; abrirArquivo(e.dataTransfer.files[0]);});
+let tR; addEventListener("resize",()=>{clearTimeout(tR); tR=setTimeout(()=>desenhar(null),150);});
+
+/* ---------- livro de exemplo (gerado no próprio navegador) ---------- */
+function gerarAmostra(){
+  const {jsPDF}=window.jspdf; const d=new jsPDF({unit:"mm",format:"a5"});
+  const W=148,H=210,M=18;
+  const caps=[
+    ["Capa",null],
+    ["Apresentação","Este é um livro de exemplo, gerado pelo próprio leitor, para mostrar como a Estante funciona. Para ler os seus livros, use o botão Abrir PDF ou arraste o arquivo para a mesa. O arquivo é lido só neste navegador; nada é enviado para servidores."],
+    ["1. Virando as páginas","Use as setas do teclado, os botões Anterior e Próxima, ou clique nas bordas do livro. No celular, deslize o dedo para os lados. Em telas largas o livro abre em página dupla, com a capa sozinha à direita, como num volume impresso."],
+    ["2. Sumário","Quando o PDF traz sumário embutido (marcadores do arquivo), ele aparece na gaveta lateral, com o número da página de cada capítulo. Basta tocar no título para ir até ele."],
+    ["3. Busca no texto","Use o botão Buscar, o atalho Ctrl+F ou a tecla barra. A busca ignora acentos e maiúsculas: procurar por tributacao encontra Tributação. Cada ocorrência aparece com o trecho ao redor e o termo fica destacado em amarelo na página. Experimente buscar por marcador."],
+    ["4. Marcadores e anotações","O botão Marcar guarda a página atual. Na aba Marcadores você escreve uma anotação curta ao lado de cada página marcada, útil para fichamento de doutrina, legislação ou laudos."],
+    ["5. Estante e progresso","Cada PDF aberto fica guardado na aba Estante deste navegador, com a página em que você parou e o percentual lido. Ao reabrir, a leitura retoma no mesmo ponto."],
+    ["6. Conforto de leitura","O seletor de papel alterna entre branco, sépia e noturno. Os botões + e − ajustam o zoom. A tela cheia está no último botão da barra."],
+    ["Limites desta versão","PDFs escaneados (só imagem) abrem normalmente, mas sem texto pesquisável. Arquivos protegidos por senha não abrem. A estante vive neste navegador: limpar os dados do site apaga os livros guardados."]
+  ];
+  caps.forEach((c,i)=>{
+    if(i) d.addPage();
+    if(i===0){
+      d.setFillColor(30,90,102); d.rect(0,0,W,H,"F");
+      d.setTextColor(255,255,255); d.setFont("times","bold"); d.setFontSize(26);
+      d.text("Manual do Leitor",W/2,82,{align:"center"});
+      d.setFont("helvetica","normal"); d.setFontSize(11);
+      d.text("Livro de exemplo · Estante RGF",W/2,94,{align:"center"});
+      d.setDrawColor(255,255,255); d.line(W/2-20,104,W/2+20,104);
+      d.setFontSize(9); d.text("RGF Informações Fiscais",W/2,H-20,{align:"center"});
+      return;
+    }
+    d.setTextColor(27,34,41); d.setFont("times","bold"); d.setFontSize(17); d.text(c[0],M,36);
+    d.setDrawColor(30,90,102); d.setLineWidth(.6); d.line(M,40,M+24,40);
+    d.setFont("times","normal"); d.setFontSize(11.5);
+    d.text(d.splitTextToSize(c[1],W-2*M),M,52,{lineHeightFactor:1.55});
+    d.setFont("helvetica","normal"); d.setFontSize(8.5); d.setTextColor(110,120,130);
+    d.text(String(i+1),W/2,H-12,{align:"center"});
+  });
+  d.setProperties({title:"Manual do Leitor"});
+  const pg=[]; for(let i=1;i<caps.length;i++) pg.push([caps[i][0],i+1]);
+  d.outline && pg.forEach(([t,p])=>{ try{ d.outline.add(null,t,{pageNumber:p}); }catch(e){} });
+  return d.output("arraybuffer");
+}
+
+/* ---------- PDF aberto pelo sistema (Abrir com) ---------- */
+if("launchQueue" in window){ try{ window.launchQueue.setConsumer(async p=>{ if(p.files&&p.files.length){ const f=await p.files[0].getFile(); abrirArquivo(f);} }); }catch(e){} }
+
+/* ---------- início ---------- */
+E.dupla=prefs.dupla==null?true:!!prefs.dupla; E.zoom=prefs.zoom||1; aplicarModo();
+if(prefs.filtro){ $("sFiltro").value=prefs.filtro; $("livro").classList.add(prefs.filtro); }
+if(window.innerWidth<=760){ $("gaveta").hidden=true; $("bGaveta").setAttribute("aria-pressed","false"); }
+(async()=>{
+  if(/[?&]compartilhado=1/.test(location.search)){
+    history.replaceState(null,"",location.pathname);
+    try{ const c=await caches.open("estante-compartilhado"); const r=await c.match("/__compartilhado__");
+      if(r){ const nome=decodeURIComponent(r.headers.get("X-Nome")||"livro.pdf"); const b=await r.arrayBuffer(); await c.delete("/__compartilhado__");
+        await abrirBytes(b,nome,nome+"|"+b.byteLength,false); return; } }catch(e){}
+  }
+  const livros=(await todosLivros()).sort((a,b)=>(b.lido||0)-(a.lido||0));
+  if(livros.length){ const l=livros[0]; await abrirBytes(l.dados,l.nome,l.id,false); return; }
+  try{ await abrirBytes(gerarAmostra(),"Manual do Leitor.pdf","amostra",true); }
+  catch(e){ $("carregando").textContent="Abra um PDF para começar."; }
+})();
+})();
+</script>
+<script>
+if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}
+if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().catch(()=>{});}
+</script>
+</body>
+</html>
