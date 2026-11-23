@@ -4,6 +4,7 @@ Leitor de livros em PDF instalável no celular (PWA), da RGF Informações Fisca
 
 - Página dupla em telas largas e página simples no celular
 - Sumário, busca no texto (ignora acentos), marcadores com anotação
+- Leitura em voz alta com destaque da frase e virada automática de página
 - Estante local com retomada da última página lida
 - Funciona offline; nenhum PDF é enviado para servidores
 

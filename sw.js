@@ -1,5 +1,5 @@
 /* Estante RGF: service worker (uso offline e recebimento de PDF compartilhado) */
-const VERSAO = "estante-rgf-v3";
+const VERSAO = "estante-rgf-v4";
 const ARQUIVOS = [
   "./", "./index.html", "./manifest.webmanifest",
   "./lib/pdf.min.js", "./lib/pdf.worker.min.js", "./lib/jspdf.umd.min.js",

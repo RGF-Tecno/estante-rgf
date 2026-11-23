@@ -39,7 +39,7 @@ html{box-sizing:border-box}
 body{background:var(--mesa);color:var(--tinta);font-family:var(--f-ui);font-size:15px;overflow:hidden}
 *{box-sizing:border-box}
 button,input,select{font:inherit;color:inherit}
-.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto auto;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 header{display:flex;align-items:center;gap:12px;padding-block:10px;border-bottom:1px solid var(--linha);flex-wrap:wrap}
 .marca{display:flex;flex-direction:column;min-width:0;flex:1 1 180px}
@@ -115,6 +115,20 @@ footer input[type=range]{flex:1 1 200px;accent-color:var(--acento);min-width:0}
 .pos{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:13px;color:var(--tinta-2);display:flex;align-items:center;gap:6px;white-space:nowrap}
 .pos input{width:62px;text-align:right;border:1px solid var(--linha);background:var(--painel);border-radius:4px;padding:4px 6px}
 .lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-2)}
+.player{display:flex;align-items:center;gap:8px;padding-block:8px;border-top:1px solid var(--linha);flex-wrap:wrap;background:var(--mesa)}
+.player .campo{display:flex;align-items:center;gap:6px;min-width:0}
+.player select{border:1px solid var(--linha);background:var(--painel);border-radius:6px;padding:6px 8px;max-width:220px;min-width:0}
+.player .chk{font-size:13px;color:var(--tinta-2);gap:5px;cursor:pointer}
+.player .chk input{accent-color:var(--acento);margin:0}
+.a-pos{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:12px;color:var(--tinta-2);margin-left:auto;white-space:nowrap}
+.player .x{font-size:22px}
+#aPlay{min-width:104px;justify-content:center}
+.fala{position:absolute;background:rgba(30,90,102,.16);border-bottom:2px solid rgba(30,90,102,.55);pointer-events:none;mix-blend-mode:multiply}
+.fala-pal{position:absolute;background:rgba(240,190,40,.55);border-radius:2px;pointer-events:none;mix-blend-mode:multiply}
+.livro.f-noite .fala{mix-blend-mode:screen;background:rgba(111,179,191,.28);border-bottom-color:rgba(111,179,191,.8)}
+.livro.f-noite .fala-pal,.livro.f-noite .realce{mix-blend-mode:screen;background:rgba(240,190,40,.45)}
+.livro.ouvindo .folha{cursor:text}
+#bOuvir[aria-pressed="true"]{background:var(--acento);border-color:var(--acento);color:var(--painel)}
 @media (max-width:760px){
   aside{position:absolute;right:0;top:0;bottom:0;z-index:8;box-shadow:var(--sombra)}
   .rot{display:none}
@@ -135,6 +149,14 @@ footer input[type=range]{flex:1 1 200px;accent-color:var(--acento);min-width:0}
   .pos .lbl,#pct{display:none}
   .pos input{width:50px}
   aside{width:100%;max-width:100%}
+  .player{gap:6px}
+  .player .voz .lbl,.player .vel .lbl{display:none}
+  .player select{max-width:132px;padding:6px 4px}
+  #aPlay{min-width:0}
+  #aPlayRot{display:none}
+  .a-pos{display:none}
+  .player .chk{font-size:12px}
+  .player select{max-width:118px}
 }
 @media (max-width:360px){.btn{padding:6px 6px}.ferr{gap:3px}.marca h1{font-size:14px}footer{gap:5px}}
 </style>
@@ -178,7 +200,21 @@ footer input[type=range]{flex:1 1 200px;accent-color:var(--acento);min-width:0}
     </aside>
   </main>
 
+  <div class="player" id="player" hidden>
+    <button class="btn" id="aAnt" type="button" title="Frase anterior" aria-label="Frase anterior"><svg viewBox="0 0 24 24"><path d="M18 6v12L9 12zM6 6v12"/></svg></button>
+    <button class="btn prim" id="aPlay" type="button"><svg viewBox="0 0 24 24" id="aIco"><path d="M7 5v14l12-7z"/></svg><span id="aPlayRot">Ouvir</span></button>
+    <button class="btn" id="aProx" type="button" title="Próxima frase" aria-label="Próxima frase"><svg viewBox="0 0 24 24"><path d="M6 6v12l9-6zM18 6v12"/></svg></button>
+    <label class="campo vel"><span class="lbl">Velocidade</span><select id="aVel" aria-label="Velocidade da leitura">
+      <option value="0.75">0,75×</option><option value="0.9">0,9×</option><option value="1">1×</option><option value="1.1">1,1×</option><option value="1.25">1,25×</option><option value="1.5">1,5×</option><option value="1.75">1,75×</option><option value="2">2×</option>
+    </select></label>
+    <label class="campo voz"><span class="lbl">Voz</span><select id="aVoz" aria-label="Voz da leitura"></select></label>
+    <label class="campo chk"><input type="checkbox" id="aNotas">Ler notas de rodapé</label>
+    <span class="a-pos" id="aPos" role="status"></span>
+    <button class="x" id="aFechar" type="button" aria-label="Fechar leitura em voz alta" title="Fechar">×</button>
+  </div>
+
   <footer>
+    <button class="btn" id="bOuvir" type="button" aria-pressed="false" title="Ouvir o livro em voz alta"><svg viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><path d="M4 15h3v5H4zM17 15h3v5h-3z"/></svg><span class="rot">Ouvir</span></button>
     <button class="btn" id="bAnt" type="button" aria-label="Página anterior">‹ <span class="rot">Anterior</span></button>
     <input type="range" id="regua" min="1" max="1" value="1" aria-label="Posição no livro">
     <div class="pos"><span class="lbl">pág.</span><input id="irPara" type="number" min="1" value="1" aria-label="Ir para a página"><span id="total">de 1</span><span id="pct">0%</span></div>
@@ -240,7 +276,7 @@ async function desenhar(anim){
   const canv=[];
   for(let i=0;i<pags.length;i++){
     const vp=pags[i].getViewport({scale:esc*dpr}); const vpc=pags[i].getViewport({scale:esc});
-    const f=document.createElement("div"); f.className="folha"+(vis.length===2&&i===0?" esq":"");
+    const f=document.createElement("div"); f.className="folha"+(vis.length===2&&i===0?" esq":""); f.dataset.p=vis[i]; f.dataset.esc=esc;
     const c=document.createElement("canvas");
     c.width=Math.floor(vp.width); c.height=Math.floor(vp.height);
     c.style.width=Math.floor(vpc.width)+"px"; c.style.height=Math.floor(vpc.height)+"px";
@@ -266,6 +302,7 @@ async function desenhar(anim){
   const zp=document.createElement("button"); zp.className="zona prox"; zp.type="button"; zp.tabIndex=-1; zp.setAttribute("aria-label","Próxima página"); zp.onclick=()=>virar(1);
   livro.append(za,zp);
   atualizarRodape(vis);
+  if(A.aberto) pintarFala();
 }
 function atualizarRodape(vis){
   vis=vis||paginasDaVista(E.pagina);
@@ -282,6 +319,7 @@ function irPara(p,anim){
   if(anim===undefined) anim=depois>antes?"prox":depois<antes?"ant":null;
   if(Math.abs(depois-antes)>2) anim=null;
   desenhar(anim); guardarPosicao();
+  if(A.aberto&&!A.auto&&!paginasDaVista(p).includes(A.p)){ A.p=paginasDaVista(p)[0]; A.s=0; A.est=null; if(A.tocando) tocar(); else atualizarPlayer(); }
 }
 function virar(d){
   const vis=paginasDaVista(E.pagina);
@@ -370,10 +408,10 @@ async function abrirBytes(bytes,nome,id,amostra){
   try{
     const doc=await pdfjs.getDocument({data:bytes.slice(0)}).promise;
     if(E.doc) E.doc.destroy();
-    buscaId++; textos.clear();
+    buscaId++; textos.clear(); if(A.aberto) pausar(); A.cache.clear(); A.est=null;
     Object.assign(E,{doc,id,nome,total:doc.numPages,amostra:!!amostra,termo:"",termoOrig:"",res:[],buscando:false});
     let tit=nome.replace(/\.pdf$/i,"");
-    try{const m=await doc.getMetadata(); const t=m&&m.info&&m.info.Title; if(t&&t.trim().length>2) tit=t.trim();}catch(e){}
+    try{const m=await doc.getMetadata(); const t=m&&m.info&&m.info.Title; const tl=t&&t.replace(/^Microsoft (Word|PowerPoint) - /i,"").trim(); if(tl&&tl.length>2&&!/^(untitled|sem t[ií]tulo|documento\d*|untitled document)$/i.test(tl)&&!/\.(docx?|pdf)$/i.test(tl)) tit=tl;}catch(e){}
     $("titulo").textContent=tit; document.title="Estante RGF · "+tit;
     E.outline=await montarSumario(doc);
     E.pagina=amostra?1:ls.get("estante:pos:"+id,1);
@@ -490,6 +528,7 @@ document.addEventListener("keydown",e=>{
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="f"&&E.doc){e.preventDefault();abrirBusca();return;}
   if(e.target.matches("input,select,textarea")) return;
   if(e.key==="/"){e.preventDefault();abrirBusca();return;}
+  if(e.key===" "&&A.aberto){e.preventDefault(); if(A.tocando) pausar(); else { posicaoInicial(); tocar(); } return;}
   if(["ArrowRight","PageDown"," "].includes(e.key)){e.preventDefault();virar(1);}
   else if(["ArrowLeft","PageUp"].includes(e.key)){e.preventDefault();virar(-1);}
   else if(e.key==="Home") irPara(1); else if(e.key==="End") irPara(E.total);
@@ -506,6 +545,171 @@ addEventListener("dragover",e=>e.preventDefault());
 addEventListener("drop",e=>{e.preventDefault();cont=0;$("soltar").hidden=true; abrirArquivo(e.dataTransfer.files[0]);});
 let tR; addEventListener("resize",()=>{clearTimeout(tR); tR=setTimeout(()=>desenhar(null),150);});
 
+/* ---------- leitura em voz alta ---------- */
+const sint=window.speechSynthesis||null;
+const A={aberto:false,tocando:false,p:1,s:0,est:null,ger:0,voz:null,vel:+prefs.vel||1,notas:!!prefs.notas,lock:null,palavra:null,cache:new Map(),auto:false,livre:false};
+const ABREV=/^(art|arts|inc|incs|al|n|nº|n°|p|pp|fl|fls|sr|sra|srs|dr|dra|drs|prof|profa|ex|exa|exmo|exma|ilmo|ltda|cia|etc|vol|cap|caps|ed|op|cit|cf|obs|res|dec|id|ibid|av|jr|séc|pág|págs|núm|tel|min|máx|aprox|apud|ref|reg|proc|rel|des|sec|dep|cód|parág|item|subitem|v|vs|nos|s\.a|s\/a)$/i;
+/* abreviaturas lidas por extenso (padrão sticky: só casa na posição exata) */
+const PRON=[
+  [/§§\s*/y,"parágrafos "],[/§\s*/y,"parágrafo "],
+  [/\barts\.\s*/iy,"artigos "],[/\bart\.\s*/iy,"artigo "],
+  [/\bincs\.\s*/iy,"incisos "],[/\binc\.\s*/iy,"inciso "],[/\bal\.\s*(?=["“]?[a-z]\b)/y,"alínea "],
+  [/\bn(?:º|°|\.)\s*(?=\d)/iy,"número "],[/\bfls\.\s*/iy,"folhas "],[/\bfl\.\s*/iy,"folha "],
+  [/\bpp\.\s*(?=\d)/y,"páginas "],[/\bp\.\s*(?=\d)/y,"página "],
+  [/\bDra\.\s*/y,"Doutora "],[/\bDr\.\s*/y,"Doutor "],[/\bSra\.\s*/y,"Senhora "],[/\bSr\.\s*/y,"Senhor "],
+  [/\bCF\/88\b/y,"Constituição Federal de 1988"],[/\bCTN\b/y,"Código Tributário Nacional"],
+  [/\bIN\s+RFB\b/y,"Instrução Normativa da Receita Federal"],[/\bRFB\b/y,"Receita Federal do Brasil"],[/\bLC\b(?=\s*(?:n|\d))/y,"Lei Complementar"],
+  [/\bIN\b(?=\s*(?:RFB|SRF|n|\d))/y,"Instrução Normativa"],[/\bLtda\.?/iy,"limitada"],[/\betc\./iy,"etcétera."],
+  [/\b(\d{1,2})\.(\d{1,2})\.(\d{4})\b/y,m=>m[1]+"/"+m[2]+"/"+m[3]]
+];
+function falado(s){ let out="",map=[],i=0;
+  fora: while(i<s.length){
+    for(const [re,rep] of PRON){ re.lastIndex=i; const m=re.exec(s);
+      if(m&&m[0].length){ const t=typeof rep==="function"?rep(m):rep; out+=t; for(let k=0;k<t.length;k++) map.push(i); i+=m[0].length; continue fora; }
+      if(false){ out+=rep; for(let k=0;k<rep.length;k++) map.push(i); i+=m[0].length; continue fora; } }
+    out+=s[i]; map.push(i); i++; }
+  return {out,map}; }
+function frasesDe(txt){
+  const out=[]; let ini=0; const re=/[.!?…;:]+["”’)»]*\s+/g; let m;
+  const push=(a,b)=>{ while(b>a&&/\s/.test(txt[b-1]))b--; while(a<b&&/\s/.test(txt[a]))a++; if(b<=a) return;
+    while(b-a>200){ let c=txt.lastIndexOf(", ",a+190); if(c<=a+70) c=txt.lastIndexOf(" ",a+190); if(c<=a+30) c=a+190;
+      out.push([a,c+1]); a=c+1; while(a<b&&/\s/.test(txt[a]))a++; }
+    if(/[\p{L}\p{N}]/u.test(txt.slice(a,b))) out.push([a,b]); };
+  while((m=re.exec(txt))){
+    const p=m[0][0], fim=m.index+m[0].length, prox=txt[fim]||"";
+    const palavra=((txt.slice(ini,m.index).match(/(\S+)$/)||["",""])[1]).replace(/^[("“«]+/,"");
+    if(p==="."){
+      if(ABREV.test(palavra)||/^[A-Za-zÀ-ÿ]$/.test(palavra)) continue;
+      if(!/[A-ZÀ-Ý"“«(—–\-\d]/.test(prox)) continue;
+      if(/^\d+$/.test(palavra)&&/\d/.test(prox)) continue;
+      if(/^\d{1,3}$/.test(palavra)&&txt.slice(ini,m.index).trim()===palavra) continue;
+    }
+    if((p===";"||p===":")&&fim-ini<140) continue;
+    push(ini,m.index+m[0].trimEnd().length); ini=fim;
+  }
+  push(ini,txt.length); return out;
+}
+/* texto falável da página: sem cabeçalho/rodapé, sem marcadores de nota, hifenização desfeita */
+async function estruturaFala(n){
+  const chave=n+"|"+A.notas; if(A.cache.has(chave)) return A.cache.get(chave);
+  const pg=await E.doc.getPage(n); const vp=pg.getViewport({scale:1}); const H=vp.height;
+  let items=[]; try{ items=(await pg.getTextContent()).items.filter(i=>typeof i.str==="string"); }catch(e){}
+  const geo=items.map(it=>{ const tx=pdfjs.Util.transform(vp.transform,it.transform); return {s:it.str,x:tx[4],y:tx[5],h:Math.hypot(tx[2],tx[3])||it.height||10,w:it.width}; });
+  const hs=geo.filter(g=>g.s.trim()).map(g=>g.h).sort((a,b)=>a-b); const med=hs.length?hs[hs.length>>1]:10;
+  let txt="",ultY=null,ultX=null,ultH=null; const segs=[];
+  for(const g of geo){
+    if(!g.s.trim()) continue;
+    if(g.y<H*0.075||g.y-g.h>H*0.925) continue;
+    if(g.h<med*0.8&&/^\s*[\d*†]{1,3}\s*$/.test(g.s)) continue;
+    if(!A.notas&&g.h<med*0.88&&g.y>H*0.55) continue;
+    if(txt){
+      const novaLinha=ultY!=null&&Math.abs(g.y-ultY)>med*0.5;
+      if(novaLinha){
+        if(/[A-Za-zÀ-ÿ]-$/.test(txt)&&/^[a-zà-ÿ]/.test(g.s)){ txt=txt.slice(0,-1); const u=segs[segs.length-1]; if(u) u.b=Math.min(u.b,txt.length); }
+        else if((g.h>ultH*1.2||g.h<ultH*0.83)&&!/[.!?:;…]["”)]?\s*$/.test(txt)) txt=txt.replace(/\s+$/,"")+". ";
+        else if(!/\s$/.test(txt)) txt+=" ";
+      } else if(!/\s$/.test(txt)&&!/^\s/.test(g.s)&&ultX!=null&&g.x-ultX>med*0.12) txt+=" ";
+    }
+    const a=txt.length; txt+=g.s; segs.push({a,b:txt.length,x:g.x,y:g.y,h:g.h,w:g.w,n:g.s.length});
+    ultY=g.y; ultX=g.x+g.w; ultH=g.h;
+  }
+  const r={n,txt,segs,frases:frasesDe(txt)}; A.cache.set(chave,r); return r;
+}
+function retangulos(est,a,b){ const r=[];
+  for(const s of est.segs){ if(s.b<=a||s.a>=b) continue;
+    const i0=Math.max(a,s.a)-s.a, i1=Math.min(b,s.b)-s.a, por=s.w/Math.max(1,s.n);
+    r.push({x:s.x+por*i0,y:s.y-s.h*0.92,w:Math.max(2,por*(i1-i0)),h:s.h*1.18}); }
+  return r; }
+function folhaDe(p){ return document.querySelector('#livro .folha[data-p="'+p+'"]'); }
+function pintar(classe,faixa){
+  document.querySelectorAll("#livro ."+classe).forEach(e=>e.remove());
+  if(!A.aberto||!A.est||!faixa) return; const f=folhaDe(A.est.n); if(!f) return; const esc=+f.dataset.esc;
+  for(const r of retangulos(A.est,faixa[0],faixa[1])){ const d=document.createElement("div"); d.className=classe;
+    d.style.left=r.x*esc+"px"; d.style.top=r.y*esc+"px"; d.style.width=r.w*esc+"px"; d.style.height=r.h*esc+"px"; f.append(d); } }
+function pintarFala(){ pintar("fala",A.est&&A.est.frases[A.s]); pintar("fala-pal",A.palavra); }
+function garantirVisivel(p){ if(paginasDaVista(E.pagina).includes(p)) return; A.auto=true; irPara(p,p>E.pagina?"prox":"ant"); A.auto=false; }
+function atualizarPlayer(){
+  $("aIco").innerHTML=A.tocando?'<path d="M8 5v14M16 5v14"/>':'<path d="M7 5v14l12-7z"/>';
+  $("aPlayRot").textContent=A.tocando?"Pausar":"Ouvir"; $("aPlay").setAttribute("aria-label",A.tocando?"Pausar leitura":"Iniciar leitura");
+  $("bOuvir").setAttribute("aria-pressed",String(A.aberto)); $("livro").classList.toggle("ouvindo",A.aberto);
+  $("aPos").textContent=A.est&&A.est.frases.length?"pág. "+A.p+" · frase "+(A.s+1)+" de "+A.est.frases.length:"pág. "+A.p;
+}
+async function travarTela(on){ try{
+  if(on&&!A.lock&&navigator.wakeLock){ A.lock=await navigator.wakeLock.request("screen"); A.lock.addEventListener("release",()=>{A.lock=null;}); }
+  else if(!on&&A.lock){ await A.lock.release(); A.lock=null; } }catch(e){} }
+function guardarAudio(){ if(E.id&&!E.amostra) ls.set("estante:audio:"+E.id,{p:A.p,s:A.s}); }
+async function falarAtual(){
+  const g=++A.ger; let est=await estruturaFala(A.p); if(g!==A.ger) return; let vazias=0;
+  while(!est.frases.length){
+    if(A.p>=E.total){ fimLivro(); return; }
+    A.p++; A.s=0; vazias++; if(vazias===3) aviso("Páginas sem texto legível (escaneadas?): pulando");
+    est=await estruturaFala(A.p); if(g!==A.ger) return; }
+  if(A.s>=est.frases.length) A.s=est.frases.length-1; if(A.s<0) A.s=0;
+  A.est=est; A.palavra=null; garantirVisivel(A.p); pintarFala(); atualizarPlayer(); guardarAudio();
+  const [a,b]=est.frases[A.s]; const {out,map}=falado(est.txt.slice(a,b));
+  const u=new SpeechSynthesisUtterance(out); u.lang=(A.voz&&A.voz.lang)||"pt-BR"; if(A.voz) u.voice=A.voz; u.rate=A.vel;
+  u.onboundary=e=>{ if(g!==A.ger||(e.name&&e.name!=="word")) return; const ci=e.charIndex, src=map[ci]; if(src==null) return;
+    const len=e.charLength||((out.slice(ci).match(/^[^\s,.;:!?]+/)||[""])[0].length)||1;
+    A.palavra=[a+src,a+(map[Math.min(ci+len-1,map.length-1)]??src)+1]; pintar("fala-pal",A.palavra); };
+  u.onend=()=>{ if(g!==A.ger) return; avancar(); };
+  u.onerror=e=>{ if(g!==A.ger||e.error==="interrupted"||e.error==="canceled") return;
+    A.tocando=false; travarTela(false); atualizarPlayer(); aviso("A voz do aparelho parou. Toque em Ouvir para retomar."); };
+  sint.speak(u);
+}
+function avancar(){ if(A.est&&A.s+1<A.est.frases.length) A.s++; else { if(A.p>=E.total){ fimLivro(); return; } A.p++; A.s=0; } falarAtual(); }
+function fimLivro(){ A.tocando=false; A.palavra=null; travarTela(false); pintarFala(); atualizarPlayer(); aviso("Fim do livro"); }
+function desbloquear(){ if(A.livre||!sint) return; try{ const u=new SpeechSynthesisUtterance(" "); u.volume=0; sint.speak(u); }catch(e){} A.livre=true; }
+function tocar(){ if(!sint||!E.doc) return; desbloquear(); A.tocando=true; A.ger++; sint.cancel(); travarTela(true); atualizarPlayer(); setTimeout(()=>{ if(A.tocando) falarAtual(); },80); }
+function pausar(){ A.tocando=false; A.ger++; if(sint) sint.cancel(); A.palavra=null; pintarFala(); travarTela(false); atualizarPlayer(); }
+function posicaoInicial(){
+  const vis=paginasDaVista(E.pagina); const salvo=E.id?ls.get("estante:audio:"+E.id,null):null;
+  if(A.est&&vis.includes(A.p)) return;
+  if(salvo&&vis.includes(salvo.p)){ A.p=salvo.p; A.s=salvo.s||0; } else { A.p=vis[0]; A.s=0; } A.est=null; }
+function abrirPlayer(){
+  if(!sint){ aviso("Este navegador não oferece leitura em voz alta"); return; }
+  A.aberto=true; $("player").hidden=false; carregarVozes(); posicaoInicial(); tocar(); setTimeout(()=>desenhar(null),30); }
+function fecharPlayer(){ pausar(); A.aberto=false; $("player").hidden=true; A.est=null; pintarFala(); atualizarPlayer(); setTimeout(()=>desenhar(null),30); }
+function pularFrase(d){ if(!A.est){ posicaoInicial(); }
+  let s=A.s+d, p=A.p;
+  const ir=async()=>{ if(s<0){ if(p<=1){ s=0; } else { p--; const e=await estruturaFala(p); s=Math.max(0,e.frases.length-1); } }
+    else if(A.est&&p===A.p&&s>=A.est.frases.length){ if(p>=E.total) return; p++; s=0; }
+    A.p=p; A.s=s; if(A.tocando) tocar(); else { A.est=await estruturaFala(A.p); if(A.s>=A.est.frases.length) A.s=Math.max(0,A.est.frases.length-1); garantirVisivel(A.p); pintarFala(); atualizarPlayer(); guardarAudio(); } };
+  ir(); }
+function carregarVozes(){
+  if(!sint) return; const sel=$("aVoz"); const todas=sint.getVoices();
+  const pt=todas.filter(v=>/^pt/i.test(v.lang));
+  const nota=v=>(v.lang.replace("_","-")==="pt-BR"?4:0)+(/natural|neural|premium|enhanced|online|google/i.test(v.name)?2:0)+(v.localService?1:0);
+  pt.sort((a,b)=>nota(b)-nota(a));
+  sel.replaceChildren();
+  if(!pt.length){ const o=document.createElement("option"); o.value=""; o.textContent=todas.length?"Sem voz em português":"Voz padrão"; sel.append(o); A.voz=null;
+    if(todas.length&&A.aberto&&!A.avisouVoz){ A.avisouVoz=true; aviso("Nenhuma voz em português instalada: instale nas configurações de voz do aparelho"); } return; }
+  for(const v of pt){ const o=document.createElement("option"); o.value=v.voiceURI||v.name;
+    o.textContent=v.name.replace(/Microsoft |Google |\(.*?\)/g,"").trim()+(v.lang.replace("_","-")==="pt-PT"?" (PT)":""); sel.append(o); }
+  const pref=pt.find(v=>(v.voiceURI||v.name)===prefs.voz)||pt[0]; A.voz=pref; sel.value=pref.voiceURI||pref.name;
+}
+if(sint){ carregarVozes(); try{ sint.addEventListener("voiceschanged",carregarVozes); }catch(e){ sint.onvoiceschanged=carregarVozes; } }
+$("bOuvir").onclick=()=>{ if(A.aberto) fecharPlayer(); else abrirPlayer(); };
+$("aPlay").onclick=()=>{ if(A.tocando) pausar(); else { posicaoInicial(); tocar(); } };
+$("aAnt").onclick=()=>pularFrase(-1); $("aProx").onclick=()=>pularFrase(1);
+$("aFechar").onclick=fecharPlayer;
+$("aVel").value=String(A.vel); if(!$("aVel").value){ $("aVel").value="1"; A.vel=1; }
+$("aVel").onchange=e=>{ A.vel=+e.target.value; prefs.vel=A.vel; ls.set("estante:prefs",prefs); if(A.tocando) tocar(); };
+$("aVoz").onchange=e=>{ const v=sint.getVoices().find(x=>(x.voiceURI||x.name)===e.target.value); A.voz=v||null; prefs.voz=e.target.value; ls.set("estante:prefs",prefs); if(A.tocando) tocar(); };
+$("aNotas").checked=A.notas;
+$("aNotas").onchange=async e=>{ A.notas=e.target.checked; prefs.notas=A.notas; ls.set("estante:prefs",prefs);
+  const ini=A.est&&A.est.frases[A.s]?A.est.frases[A.s][0]:0; A.est=await estruturaFala(A.p);
+  const i=A.est.frases.findIndex(f=>f[1]>ini); A.s=i<0?0:i; if(A.tocando) tocar(); else { pintarFala(); atualizarPlayer(); } };
+/* tocar no texto começa a leitura daquele ponto */
+$("livro").addEventListener("click",async e=>{
+  if(!A.aberto||e.target.closest(".zona")) return; const f=e.target.closest(".folha"); if(!f) return;
+  const n=+f.dataset.p, esc=+f.dataset.esc, r=f.getBoundingClientRect(); const x=(e.clientX-r.left)/esc, y=(e.clientY-r.top)/esc;
+  const est=await estruturaFala(n); let melhor=null,d=Infinity;
+  for(const s of est.segs){ const dy=y<s.y-s.h?(s.y-s.h)-y:y>s.y+s.h*0.3?y-s.y:0; const dx=x<s.x?s.x-x:x>s.x+s.w?x-(s.x+s.w):0; const dd=dy*4+dx; if(dd<d){ d=dd; melhor=s; } }
+  if(!melhor||!est.frases.length) return;
+  const pos=melhor.a+Math.max(0,Math.min(melhor.n-1,Math.floor((x-melhor.x)/(melhor.w/Math.max(1,melhor.n)))));
+  const i=est.frases.findIndex(fr=>pos<fr[1]); A.p=n; A.s=i<0?est.frases.length-1:i; A.est=est; tocar(); });
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&A.tocando) travarTela(true); });
+
 /* ---------- livro de exemplo (gerado no próprio navegador) ---------- */
 function gerarAmostra(){
   const {jsPDF}=window.jspdf; const d=new jsPDF({unit:"mm",format:"a5"});
@@ -519,6 +723,7 @@ function gerarAmostra(){
     ["4. Marcadores e anotações","O botão Marcar guarda a página atual. Na aba Marcadores você escreve uma anotação curta ao lado de cada página marcada, útil para fichamento de doutrina, legislação ou laudos."],
     ["5. Estante e progresso","Cada PDF aberto fica guardado na aba Estante deste navegador, com a página em que você parou e o percentual lido. Ao reabrir, a leitura retoma no mesmo ponto."],
     ["6. Conforto de leitura","O seletor de papel alterna entre branco, sépia e noturno. Os botões + e − ajustam o zoom. A tela cheia está no último botão da barra."],
+    ["7. Ouvir o livro","Toque em Ouvir no rodapé e o livro passa a ser lido em voz alta. A frase em leitura fica destacada na página, a palavra falada também quando o aparelho permite, e a página vira sozinha ao terminar. Toque em qualquer trecho para a leitura começar dali. O Art. 5º da CF/88 e o § 2º do art. 150 do CTN são lidos por extenso. Ajuste a velocidade e a voz na barra do leitor."],
     ["Limites desta versão","PDFs escaneados (só imagem) abrem normalmente, mas sem texto pesquisável. Arquivos protegidos por senha não abrem. A estante vive neste navegador: limpar os dados do site apaga os livros guardados."]
   ];
   caps.forEach((c,i)=>{

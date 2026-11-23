@@ -30,6 +30,14 @@ ETAPA 2 - INSTALAR NO IPHONE (Safari)
   2. Toque no botão Compartilhar (quadrado com seta para cima).
   3. Toque em "Adicionar à Tela de Início" e confirme.
 
+OUVIR O LIVRO (LEITURA EM VOZ ALTA)
+Toque no fone de ouvido no rodapé. A frase lida fica destacada e a página
+vira sozinha. Toque em qualquer trecho para começar a leitura dali.
+A voz é a do próprio aparelho: se não houver voz em português, instale em
+Android: Configurações > Acessibilidade > Saída de conversão de texto em voz
+iPhone: Ajustes > Acessibilidade > Conteúdo Falado > Vozes > Português (Brasil)
+Mantenha a tela ligada: com a tela bloqueada a leitura é interrompida.
+
 ATUALIZAÇÕES
 Para atualizar o app, substitua os arquivos no repositório. Os celulares
 recebem a nova versão ao abrir o app conectados à internet.
